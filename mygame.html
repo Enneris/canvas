@@ -1,0 +1,343 @@
+<html><head>
+<title>Space N Vaders Game</title>
+</head>
+<body>
+<h1>Space N Vaders</h1>
+
+<canvas id="canvas" width="600" height="400"></canvas>
+<script src="gamecore.js"></script>
+
+<script language="JavaScript">
+
+    var can = document.getElementById("canvas");
+    var c = can.getContext('2d');
+
+    player.width=46;
+    player.height=46;
+    
+    var ship_image;
+    var doge_image;
+    var bomb_image;
+    var bullet_image;
+    var bgImage;
+    var logoImage;
+    var playImage;
+    var instructImage;
+    var shipImage;
+    var rulesImage;
+    var ship_chosen;
+    var isPause=false;
+    
+ 
+    loadResources();
+ 
+    function loadResources() {
+        doge_image=new Image();
+        doge_image.src="images/doge.png";
+        
+        ship_image = new Image();
+        ship_image.src = "images/Hunter1.png";
+ 
+        bomb_image = new Image();
+        bomb_image.src = "images/bomb.png";
+ 
+        bullet_image = new Image();
+        bullet_image.src = "images/bullets.png";
+        
+        bgImage=new Image();
+        bgImage.src="images/background.jpg";
+        
+        logoImage=new Image();
+        logoImage.src="images/logo.png";
+        
+        playImage=new Image();
+        playImage.src="images/play.png";
+        
+        instructImage=new Image();
+        instructImage.src="images/instructions.png";
+        
+        shipImage=new Image();
+        shipImage.src="images/ship.png";
+        
+        rulesImage=new Image();
+        rulesImage.src="images/rules.png"
+    }
+    
+    //Позиции, размеры кнопок
+    var buttonX= [100,110,90];
+    var buttonY= [100,150,200];
+    var buttonWidth= [96,260,182];
+    var buttonHeight= [40,40,40];
+    
+    // =========== menu ============
+    
+    function menu(){
+ 
+    draw();
+        
+    function draw(){
+        c.drawImage(bgImage, 0, 0);
+        c.drawImage(logoImage, 100,-10);
+        c.drawImage(playImage, buttonX[0], buttonY[0]);
+        c.drawImage(instructImage, buttonX[1], buttonY[1]);
+        c.drawImage(shipImage, buttonX[2], buttonY[2]);
+    }
+        
+    function getMousePosition(can, event) { 
+            let rect = can.getBoundingClientRect(); 
+            let x = event.clientX - rect.left; 
+            let y = event.clientY - rect.top; 
+            console.log("Coordinate x: " + x,  
+                        "Coordinate y: " + y);
+            if(x>238 && x<338 && y>134 && y<158){
+                game.state="start";
+
+            }
+            if(x>132 && x<449 && y>186 && y<210){
+                game.state='rules';
+            }
+            if(x>246 && x<335 && y>238 && y<264){
+                game.state="ships";
+            }
+        }
+        can.addEventListener("mousedown", function(e) 
+        { 
+            getMousePosition(can, e); 
+        });
+        
+        
+    }
+    
+    
+    
+function mainLoop() {
+    
+	var c = can.getContext('2d');
+    if(!isPause){
+        updateGame();
+	   updateBackground();
+	   updateEnemies();
+	   updatePlayer(); 
+        
+        updatePlayerBullets();
+	   updateEnemyBullets();
+
+	   checkCollisions();
+	
+        drawBackground(c);
+	   drawEnemies(c);
+	   drawPlayer(c);
+	   drawEnemyBullets(c);
+	   drawPlayerBullets(c);
+	   drawOverlay(c);
+    }
+    
+    Pause();
+	
+	
+}
+
+
+// =========== player ============
+
+function firePlayerBullet() {
+	//create a new bullet
+	playerBullets.push({
+		x: player.x,
+        x:player.x+14,
+		y: player.y - 5,
+		width:10,
+		height:10,
+        width:20,
+        height:20,
+        counter:0,
+	});
+}
+    
+ship_chosen=ship_image;
+    
+function drawPlayer(c) {
+    if(player.state == "dead") return;
+    
+    if(player.state == "hit") {
+        drawPlayerExplosion(c);
+    	return;
+	}
+    if(game.state!=1 && game.state!="rules" && game.state!="ships"){
+        if(ship_chosen==ship_image){
+            c.drawImage(ship_chosen,
+               25,1,23,23,
+               player.x,player.y,player.width,player.height
+               );
+        }
+        else{
+            c.drawImage(ship_chosen,
+               player.x,player.y,player.width,player.height
+               );
+        }
+        
+    }
+    
+}
+    var particles=[];
+    
+    function drawPlayerExplosion(c){
+        if(player.counter==0){
+            particles=[];
+            for(var i=0;i<50;i++){
+                particles.push({
+                    x:player.x+player.width/2,
+                    y:player.y+player.height/2,
+                    xv:(Math.random()-0.5)*2.0*5.0,
+                    yv:(Math.random()-0.5)*2.0*5.0,
+                    age:0,
+                })
+            }
+        }
+        if(player.counter>0){
+            for(var i=0;i<particles.length;i++){
+                var p=particles[i];
+                p.x+=p.xv;
+                p.y+=p.yv;
+                var v=255-p.age*3;
+                c.fillStyle="rgb("+v+","+v+","+v+")";
+                c.fillRect(p.x,p.y,3,3);
+                p.age++;
+            }
+        }
+    }
+
+function drawPlayerBullets(c) {
+	for(i in playerBullets) {
+		var bullet = playerBullets[i];
+        var count=Math.floor(bullet.counter/4);
+        var xoff=(count%4)*24;
+        c.drawImage(
+            bullet_image,
+            xoff+10,0+9,8,8,
+            bullet.x,bullet.y,bullet.width,bullet.height
+            );
+	}
+}
+
+
+// =========== background ============
+
+function drawBackground(c) {
+    if (game.state!=1&&game.state!="rules"&&game.state!="ships"){
+        c.drawImage(bgImage, 0, 0);
+
+        c.fillStyle='#F5F5F5';
+        c.font='Bold 11pt Courier';
+        c.fillText(score.title,5,15);
+        c.fillText(score.num,55,15);
+        
+    }
+
+}
+
+
+
+// =========== enemies ===============
+
+function drawEnemies(c) {
+    for(var i in enemies) {
+        var enemy = enemies[i];
+        if(enemy.state == "alive") {
+            c.fillStyle = "#0A8A0A";
+            drawEnemy(c,enemy,15);
+        }
+        if(enemy.state == "hit") {
+            c.fillStyle = "#800080";
+            enemy.shrink--;
+            drawEnemy(c,enemy,enemy.shrink);
+        }
+        //this probably won't ever be called.
+        if(enemy.state == "dead") {
+            c.fillStyle = "black";
+            c.drawEnemy(c,enemy,15);
+        }
+    }
+}
+
+    function drawEnemy(c,enemy,radius){
+        if(radius<=0)radius=1;
+        var theta=enemy.counter;
+        c.save();
+        c.translate(0,30);
+        circlePath(c,enemy.x,enemy.y,radius*2);
+        c.fill();
+        for(var i=0;i<10;i++){
+            var xoff=Math.sin(toRadians(theta+i*36*2))*radius;
+            var yoff=Math.sin(toRadians(theta+i*36*1.5))*radius;
+            circlePath(c,enemy.x+xoff,enemy.y+yoff,3);
+            c.fillStyle='#F5F5F5';
+            c.fill();
+        }
+        c.restore();
+    }
+    function toRadians(d){
+        return d*Math.PI*2.0/360.0;
+    }
+    function circlePath(c,x,y,r){
+        c.beginPath();
+        c.moveTo(x,y);
+        c.arc(x,y,r,0,Math.PI*2);
+    }
+function createEnemyBullet(enemy) {
+    return {
+        x:enemy.x,
+        y:enemy.y+enemy.height,
+        width:30,
+        height:30,
+        counter:0,
+    }
+}
+
+function drawEnemyBullets(c) {
+    for(var i in enemyBullets) {
+        var bullet = enemyBullets[i];
+        var xoff=(bullet.counter%9)*12+1;
+        var yoff=1;
+        c.drawImage(bomb_image,
+                   xoff,yoff,11,11,
+                   bullet.x,bullet.y,bullet.width,bullet.height
+                   );
+    }
+}
+
+
+
+
+
+// =========== overlay ===============
+
+function drawOverlay(c) {
+    if(overlay.counter==-1) return;
+    
+    var alpha=overlay.counter/50.0;
+    if(alpha>1)alpha=1;
+    c.globalAlpha=alpha;
+    
+    c.save();
+    c.fillStyle='#F5F5F5';
+    c.font='Bold 41pt Courier';
+    c.fillText(overlay.title,145,200);
+    c.font="15pt Courier";
+    c.fillText(overlay.subtitle,150,250);
+    c.fillText(score.title,255,300)
+    c.fillText(score.num,325,300);
+    c.restore();
+}
+
+doSetup();
+setInterval(mainLoop,1000/30);
+
+
+
+
+
+</script>
+
+
+</body></html>
